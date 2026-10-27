@@ -73,7 +73,7 @@ export default function App() {
 
   return (
     <main className={`scene ${ready ? 'is-ready' : ''} ${open ? 'is-open' : ''}`} dir="rtl">
-      <audio ref={audioRef} src="/audio/wedding-song-v2.m4a" loop preload="auto" />
+      <audio ref={audioRef} src="/audio/wedding-song-v3.m4a" loop preload="auto" />
       <img className="asset-preload" src="/images/ivory-envelope.png" alt="" onLoad={() => setEnvelopeReady(true)} />
       <img className="asset-preload" src="/images/ivory-pool.png" alt="" onLoad={() => setGardenReady(true)} />
       <img className="asset-preload" src="/images/swan-cutout.png" alt="" onLoad={() => setSwansReady(true)} />
