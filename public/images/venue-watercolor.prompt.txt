@@ -1,6 +1,0 @@
-Generated with the built-in image_gen tool, with transparent_background: true.
-
-Use case: illustration-story. Asset type: transparent watercolor illustration for a romantic blush pink wedding invitation website. Create a delicate hand-painted watercolor of a Mediterranean Ibiza estate, cream two-story villa with arched windows and a terracotta roof, a long turquoise reflecting swimming pool leading toward the villa, tall slender dark olive green cypress trees symmetrically flanking both sides, pale garden vegetation, small soft blue sky wash behind the villa. Centered frontal perspective, landscape composition approximately 4:3, entire subject visible. Dreamy muted pastel pink beige sage and sky blue palette, fine artistic architectural details, softly feathered watercolor edges fading into genuine alpha transparency around the illustration. No background paper rectangle, no lettering, no border, no text, no watermark. This is an illustrative venue vignette, not a photo or UI screenshot.
-
-Illustrative artwork inspired by the supplied reference; not a depiction verified against the actual venue.
-Venue address source: https://www.canaxica.com/en/contact/

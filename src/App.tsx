@@ -1,204 +1,131 @@
-﻿import { useEffect, useRef, useState } from 'react'
-import MusicBox3D from './components/MusicBox3D'
-import { useCallback } from 'react'
-import EnvelopeWelcome from './components/EnvelopeWelcome'
-import WeddingCountdown from './components/WeddingCountdown'
-import WeddingRSVP from './components/WeddingRSVP'
-import useInvitationAudio from './useInvitationAudio'
-import './scene.css'
-
-type Phase='box'|'leaving'|'entering'|'couple'|'returning'|'resetting'
+import { useEffect, useRef, useState } from 'react'
+import SaveTheDate from './SaveTheDate'
+import Specialties from './Specialties'
+import AboutCafe from './AboutCafe'
+import OpeningDay from './OpeningDay'
+import RSVP from './RSVP'
+import Footer from './Footer'
+import useScrollReveal from './useScrollReveal'
+import useInvitationMusic from './useInvitationMusic'
+import './index.css'
 
 export default function App() {
-  const audio = useInvitationAudio()
-  const [isOpen, setIsOpen] = useState(false)
-  const [ready, setReady] = useState(false)
-  const [busy, setBusy] = useState(false)
-  const [settledOpen, setSettledOpen] = useState(false)
-  const [assetError, setAssetError] = useState(false)
-  const [enteredAt, setEnteredAt] = useState<number | null>(null)
-  const finishWelcome = useCallback(() => setEnteredAt(performance.now()), [])
-  const hasOpened = useRef(false)
-  const invitationNote = useRef<HTMLElement>(null)
-  const [phase,setPhase]=useState<Phase>('box')
-  const isPedestal=phase==='entering'||phase==='couple'||phase==='returning'
-  const isFading=phase==='leaving'||phase==='entering'||phase==='returning'||phase==='resetting'
+  const [arabic, setArabic] = useState(false)
+  const [opened, setOpened] = useState(false)
+  const motionPaused = false
+  const { audioRef, playing, startMusic, toggleMusic } = useInvitationMusic()
+  const openingTitle = useRef<HTMLHeadingElement>(null)
+  const continuation = useRef<HTMLElement>(null)
+  const openingPage = useRef<HTMLDivElement>(null)
+  useScrollReveal(openingPage, opened)
 
   useEffect(() => {
-    if (enteredAt === null || !ready || isOpen || busy || phase!=='box') return
-    // Start one second after entry, while allowing graphics to finish preparing.
-    // Replay waits for the case to close, then repeats the same one-second pause.
-    const delay = hasOpened.current ? 1000 : Math.max(0, 1000 - (performance.now() - enteredAt))
-    const timer = window.setTimeout(() => {
-      hasOpened.current = true
-      setBusy(true)
-      setIsOpen(true)
-    }, delay)
-    return () => window.clearTimeout(timer)
-  }, [ready, isOpen, busy, enteredAt, phase])
+    const image = new Image()
+    image.src = '/images/maison-opening.png'
+  }, [])
 
   useEffect(() => {
-    if(phase!=='box' || !isOpen || !settledOpen || busy) return
-    const timer=window.setTimeout(()=>setPhase('leaving'),3000)
-    return ()=>window.clearTimeout(timer)
-  },[phase,isOpen,settledOpen,busy])
+    if (opened) openingTitle.current?.focus({ preventScroll: true })
+  }, [opened])
 
-  useEffect(() => {
-    if (phase !== 'couple') return
-    let frame = 0
-    const timer = window.setTimeout(() => {
-      if (!invitationNote.current || window.scrollY > 8) return
-      const start = window.scrollY
-      const destination = Math.min(
-        invitationNote.current.getBoundingClientRect().top + start - window.innerHeight * .18,
-        document.documentElement.scrollHeight - window.innerHeight,
-      )
-      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-      const began = performance.now()
-      const scroll = (now: number) => {
-        const progress = Math.min((now - began) / 2800, 1)
-        const eased = progress * progress * (3 - 2 * progress)
-        window.scrollTo(0, start + (destination - start) * eased)
-        if (progress < 1) frame = requestAnimationFrame(scroll)
-      }
-      frame = requestAnimationFrame(scroll)
-    }, 6500)
-    // Let the guest take over as soon as they interact with the page.
-    const cancel = () => { window.clearTimeout(timer); cancelAnimationFrame(frame) }
-    const events = ['wheel', 'touchstart', 'pointerdown', 'keydown'] as const
-    events.forEach(event => window.addEventListener(event, cancel, { passive: true }))
-    return () => {
-      cancel()
-      events.forEach(event => window.removeEventListener(event, cancel))
-    }
-  }, [phase])
+  const languageButton = (
+    <button className="language-button" onClick={() => setArabic(!arabic)} lang={arabic ? 'en' : 'ar'} aria-label={arabic ? 'Switch to English' : 'التبديل للعربية'}>
+      {arabic ? 'EN' : 'عربي'}
+    </button>
+  )
+
+  const musicButton = (
+    <button className="motion-button" data-music-toggle onClick={toggleMusic} aria-pressed={playing} aria-label={arabic ? (playing ? 'إيقاف الموسيقى' : 'تشغيل الموسيقى') : (playing ? 'Pause music' : 'Play music')}>
+      <span /><span /><span />
+    </button>
+  )
+
+  function openInvitation() {
+    startMusic()
+    setOpened(true)
+  }
 
   return (
-    <main className="invitation" aria-label="دعوة زفاف ديفيد وآنا">
-      {enteredAt === null && <EnvelopeWelcome onStart={audio.begin} onOpened={finishWelcome} />}
-      {enteredAt !== null && <button className="audio-toggle" type="button" dir="rtl"
-        disabled={audio.status === 'loading' || audio.status === 'ended'}
-        aria-pressed={audio.status === 'playing'}
-        onClick={() => audio.status === 'error' ? window.location.reload() : audio.toggle()}>
-        {audio.status === 'loading' ? 'جارٍ تحميل الموسيقى…' : audio.status === 'playing' ? 'إيقاف الموسيقى مؤقتاً' : audio.status === 'error' ? 'تعذّر تحميل الصوت — إعادة المحاولة' : audio.status === 'ended' ? 'انتهت الموسيقى' : 'تشغيل الموسيقى ♫'}
-      </button>}
-      <div className="room-extension" aria-hidden="true" />
-      <section className={`scene${isOpen ? ' scene--open' : ''}${isPedestal ? ' scene--pedestal' : ''}${isFading ? ' scene--hidden' : ''}`}
-        inert={enteredAt === null} data-phase={phase} aria-label={isPedestal ? 'مشهد العروسين على قاعدة مزخرفة' : 'صندوق موسيقى الزفاف'}
-        onTransitionEnd={event=>{
-          if(event.target!==event.currentTarget || event.propertyName!=='opacity') return
-          if(phase==='leaving') setPhase('entering')
-          if(phase==='returning') {
-            setBusy(true)
-            setSettledOpen(false)
-            setIsOpen(false)
-            setPhase('resetting')
-          }
-        }}>
-        <img className="scene__room" src="/images/blush-room.png"
-          alt="قوس كلاسيكي وردي تلامسه أشعة الشمس وطاولة مغطاة بساتان وردي"
-          fetchPriority="high" />
-        <div className="scene__light" aria-hidden="true" />
-        {(!isPedestal || phase==='couple') && <header key={isPedestal ? 'couple' : 'box'} className={`inscription${isPedestal ? ' inscription--couple' : ''}`} dir="ltr">
-          <p className="inscription__eyebrow">{isPedestal ? <>WE’RE GETTING<br />MARRIED</> : 'THE WEDDING OF'}</p>
-          <h1 id="couple-names">David <span>&amp;</span> Anna</h1>
-          <div className="inscription__flourish" aria-hidden="true">
-            <span />
-            <svg viewBox="0 0 90 30" fill="none">
-              <path d="M4 19c17 0 22-8 32-8 8 0 9 10 3 10-7 0-2-11 6-15 8 4 13 15 6 15-6 0-5-10 3-10 10 0 15 8 32 8M45 7V2m0 5-4-3m4 3 4-3M11 18c2-7 10-9 14-5m-8 4c3 7 10 7 14 3m48-2c-2-7-10-9-14-5m8 4c-3 7-10 7-14 3" />
-              <path d="m45 23 2 2-2 2-2-2 2-2Z" />
-            </svg>
-            <span />
+    <main className="welcome-shell">
+      <audio ref={audioRef} src="/audio/fairuz.m4a" autoPlay loop preload="auto" hidden />
+      {opened ? (
+        <div className={`opening-page${motionPaused ? ' opening-page--paused' : ''}`} ref={openingPage}>
+          <section className={`opening-scene${motionPaused ? ' opening-scene--paused' : ''}`} aria-label={arabic ? 'الافتتاح الكبير' : 'Grand opening'}>
+            <img className="opening-scene__photo" src="/images/maison-opening.png" alt="" fetchPriority="high" />
+            <div className="opening-scene__shade" />
+            <div className="opening-logo" dir="ltr" aria-label="Maison Café">
+              <svg viewBox="0 0 64 74" fill="none" stroke="currentColor" strokeWidth="2.8" aria-hidden="true">
+                <path d="M32 5C21 15 24 25 32 32C41 23 42 14 32 5ZM13 26C8 43 18 58 29 64C27 46 21 33 13 26ZM51 26C56 43 46 58 35 64C37 46 43 33 51 26Z" />
+              </svg>
+              <span>MAISON<span>CAFÉ</span></span>
+            </div>
+            <div className={`opening-copy${arabic ? ' opening-copy--arabic' : ''}`} dir={arabic ? 'rtl' : 'ltr'}>
+              <p className="opening-copy__eyebrow">{arabic ? 'ندعوكم لحضور' : 'YOU’RE INVITED TO OUR'}</p>
+              <h1 ref={openingTitle} tabIndex={-1}>
+                <span className="opening-copy__grand">{arabic ? 'الافتتاح' : 'GRAND'}</span>
+                <span className="opening-copy__script">{arabic ? 'الكبير' : 'Opening'}</span>
+              </h1>
+              <div className="brand__divider" aria-hidden="true"><span /></div>
+              <p className="opening-copy__tagline">{arabic ? <>شيء جميل<br />يُحضّر هنا</> : <>SOMETHING BEAUTIFUL<br />IS BREWING</>}</p>
+            </div>
+            <button className="scroll-button" aria-label={arabic ? 'مرّر للأسفل' : 'Scroll down'} onClick={() => continuation.current?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'start' })}>
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v17m-6-6 6 6 6-6" /></svg>
+            </button>
+          </section>
+          <section className="guest-section" ref={continuation} aria-labelledby="guest-heading" dir={arabic ? 'rtl' : 'ltr'}>
+            <img className="guest-section__photo" src="/images/maison-guest.png" alt="" loading="lazy" />
+            <article className={`guest-card${arabic ? ' guest-card--arabic' : ''}`}>
+              <span className="guest-card__pin" aria-hidden="true" />
+              <h2 id="guest-heading" data-scroll-reveal><span>{arabic ? 'كن ضيفنا' : 'Be Our'}</span><em>{arabic ? 'المميّز' : 'Special Guest'}</em></h2>
+              <div className="brand__divider" aria-hidden="true"><span /></div>
+              <h3 data-scroll-reveal>{arabic ? 'أنت مدعو' : 'You’re Invited'}</h3>
+              <div className="guest-card__body">
+                <p data-scroll-reveal>{arabic ? 'يسعدنا أن ندعوكم شخصياً للاحتفال بالافتتاح الكبير لميزون كافيه.' : 'We are delighted to personally invite you to celebrate the grand opening of Maison Café.'}</p>
+                <p data-scroll-reveal>{arabic ? 'انضموا إلينا في يوم دافئ لا يُنسى، مع قهوة رائعة، وضيافة لذيذة، ولحظات مميّزة.' : 'Join us for a warm and memorable day filled with great coffee, delicious treats, and special moments.'}</p>
+              </div>
+              <p className="guest-card__closing" data-scroll-reveal>{arabic ? <>نتشوّق للاحتفال<br />معكم!</> : <>We can’t wait to<br />celebrate with you!</>}</p>
+              <svg className="guest-card__heart" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 20S3 14.5 3 8.5C3 3 10 2 12 7C14 2 21 3 21 8.5C21 14.5 12 20 12 20Z" /></svg>
+            </article>
+          </section>
+          <SaveTheDate arabic={arabic} />
+          <Specialties arabic={arabic} paused={motionPaused} />
+          <AboutCafe arabic={arabic} />
+          <OpeningDay arabic={arabic} paused={motionPaused} />
+          <RSVP arabic={arabic} />
+          <Footer arabic={arabic} />
+          <div className="experience-controls">
+            {languageButton}
+            {musicButton}
           </div>
-        </header>}
-        <div className="casket" data-state={isOpen ? 'open' : 'closed'}>
-          <div className="casket__shadow" aria-hidden="true" />
-          {!ready && <img className="casket__fallback" src="/images/closed-box-initial.png" alt="" fetchPriority="high" />}
-          <MusicBox3D open={isOpen} presentation={isPedestal ? 'pedestal' : 'box'} onReady={() => setReady(true)}
-            onError={() => { setAssetError(true); setReady(false) }}
-            onPresentationReady={presentation=>{
-              if(presentation==='pedestal' && phase==='entering') setPhase('couple')
-              if(presentation==='box' && phase==='resetting') setPhase('box')
-            }}
-            onSettled={(opened) => { setBusy(false); setSettledOpen(opened) }} />
         </div>
-        {assetError && <button className="asset-retry" onClick={() => window.location.reload()}>إعادة المحاولة</button>}
-        {phase==='couple' && !busy && <button className="scroll-hint" onClick={() => invitationNote.current?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })} aria-label="الانتقال إلى نص الدعوة">
-          <span>SCROLL</span>
-          <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m6 8 4 4 4-4" /></svg>
-        </button>}
-        <p className="sr-only" role="status">{isPedestal ? 'عروسان بوضعية رقص ثابتة بوسط الطاولة فوق قاعدة وردية مزخرفة بالذهب' : isOpen ? 'فُتح صندوق الموسيقى، والعروسان يدوران بداخله' : ''}</p>
+      ) : (
+      <section className="invitation" aria-label="Maison Café">
+        <button className="invitation__entry" aria-label={arabic ? 'افتح الدعوة' : 'Open the invitation'} onClick={openInvitation} />
+        <img className="invitation__photo" src="/images/maison-coffee.png" alt="" fetchPriority="high" />
+        <div className="invitation__wash" />
+        <header className="brand" dir="ltr">
+          <svg className="coffee-mark" viewBox="0 0 64 74" fill="currentColor" aria-hidden="true">
+            <path d="M32 3C19 13 21 26 31 34C41 25 45 13 32 3ZM14 21C7 37 15 53 29 64C28 43 23 30 14 21ZM4 34C2 51 13 62 26 68C17 51 10 41 4 34ZM49 21C57 37 48 53 35 64C36 43 41 30 49 21ZM60 34C62 51 51 62 38 68C47 51 54 41 60 34Z" />
+          </svg>
+          <h1>MAISON<span>CAFÉ</span></h1>
+          <p className={arabic ? 'brand__story brand__story--arabic' : 'brand__story'} dir={arabic ? 'rtl' : 'ltr'}>
+            {arabic ? <>حكاية جديدة<br />تبدأ من هنا</> : <>A NEW STORY<br />BEGINS HERE</>}
+          </p>
+          <div className="brand__divider" aria-hidden="true"><span /></div>
+        </header>
+        <div className="invitation__actions">
+          <button className="open-button" onClick={openInvitation} dir="ltr">
+            <span>{arabic ? 'اضغط للفتح' : 'TAP TO OPEN'}</span>
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m6 3 5 5-5 5" /></svg>
+          </button>
+          <div className="footer-flourish" aria-hidden="true">
+            <svg viewBox="0 0 40 48" fill="none"><path d="M21 45C20 31 21 22 23 10C25-4 34 9 23 19C15 10 11 18 17 23C20 25 22 27 23 30C34 15 41 26 28 31C20 30 10 22 9 29C8 34 18 34 21 38" /></svg>
+          </div>
+        </div>
+        {languageButton}
+        <div className="invitation__music-control">{musicButton}</div>
       </section>
-      {phase==='couple' && <section ref={invitationNote} className="invitation-note" dir="ltr" aria-labelledby="invitation-heading">
-        <h2 id="invitation-heading">With love, we invite you</h2>
-        <div className="invitation-note__divider" aria-hidden="true">✦</div>
-        <p className="invitation-note__message">
-          to be a part of our special day<br />
-          as we begin a new chapter together.<br />
-          Your presence will make our celebration<br />
-          truly meaningful.
-        </p>
-        <div className="inscription__flourish invitation-note__flourish" aria-hidden="true">
-          <span />
-          <svg viewBox="0 0 90 30" fill="none"><path d="M4 19c17 0 22-8 32-8 8 0 9 10 3 10-7 0-2-11 6-15 8 4 13 15 6 15-6 0-5-10 3-10 10 0 15 8 32 8M45 7V2m0 5-4-3m4 3 4-3M11 18c2-7 10-9 14-5m-8 4c3 7 10 7 14 3m48-2c-2-7-10-9-14-5m8 4c-3 7-10 7-14 3" /></svg>
-          <span />
-        </div>
-        <p className="invitation-note__countdown">The countdown has begun</p>
-        <div className="invitation-note__divider" aria-hidden="true">✦</div>
-        <WeddingCountdown />
-        <section className="wedding-schedule" aria-labelledby="schedule-heading">
-          <h2 id="schedule-heading">The Schedule</h2>
-          <div className="invitation-note__divider" aria-hidden="true">✦</div>
-          <ol className="schedule-timeline">
-            <li className="schedule-timeline__event">
-              <svg className="schedule-timeline__icon" viewBox="0 0 48 48" fill="none" aria-hidden="true">
-                <circle cx="18" cy="29" r="10" /><circle cx="18" cy="29" r="7.5" />
-                <circle cx="31" cy="29" r="10" /><circle cx="31" cy="29" r="7.5" />
-                <path d="m14 15 4-5 4 5-4 5-4-5Zm0 0h8m-6-3 2 8 2-8" />
-              </svg>
-              <div className="schedule-timeline__details">
-                <h3>Wedding<br />Ceremony</h3>
-                <p><time dateTime="16:00">4:00 PM</time></p>
-              </div>
-            </li>
-            <li className="schedule-timeline__event">
-              <svg className="schedule-timeline__icon" viewBox="0 0 48 48" fill="none" aria-hidden="true">
-                <circle cx="25" cy="25" r="12" /><circle cx="25" cy="25" r="9" />
-                <path d="M7 7v11c0 3 5 3 5 0V7M9.5 7v33m-5-33v11c0 3 2 5 5 5M43 7c-5 4-6 10-6 16h6m0-16v33" />
-              </svg>
-              <div className="schedule-timeline__details">
-                <h3>Reception</h3>
-                <p><time dateTime="18:00">6:00 PM</time></p>
-              </div>
-            </li>
-          </ol>
-        </section>
-        <section className="wedding-locations" aria-labelledby="locations-heading">
-          <h2 id="locations-heading">Locations</h2>
-          <div className="invitation-note__divider" aria-hidden="true">✦</div>
-          <article className="venue" aria-labelledby="venue-name">
-            <img className="venue__illustration" src="/images/venue-watercolor.png" alt="رسم مائي لفيلا متوسطية ومسبح تحيط به أشجار السرو" loading="lazy" width="1448" height="1086" />
-            <p className="venue__eyebrow">RECEPTION</p>
-            <h3 id="venue-name">Ca Na Xica</h3>
-            <address className="venue__address">
-              Carretera de Sant Miquel Km 10.2<br />
-              Sant Miquel de Balansat, Ibiza, Spain
-            </address>
-            <a className="venue__map" href="https://www.google.com/maps/search/?api=1&query=Ca+Na+Xica+Carretera+de+Sant+Miquel+Km+10.2+Ibiza+Spain" target="_blank" rel="noopener noreferrer" aria-label="View Ca Na Xica location on Google Maps">
-              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 18s6-6.1 6-11a6 6 0 0 0-12 0c0 4.9 6 11 6 11Z" /><circle cx="10" cy="7" r="2" /></svg>
-              <span>VIEW LOCATION</span>
-            </a>
-          </article>
-        </section>
-        <WeddingRSVP />
-        <footer className="invitation-footer">
-          <p>With love,</p>
-          <p className="invitation-footer__names">David &amp; Anna</p>
-          <button className="invitation-note__replay" onClick={() => { window.scrollTo(0, 0); setPhase('returning') }}>إعادة المشهد</button>
-        </footer>
-      </section>}
+      )}
     </main>
   )
 }
-
-
