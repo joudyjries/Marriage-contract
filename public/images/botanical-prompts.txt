@@ -1,7 +1,0 @@
-Tool: built-in image_gen.imagegen, transparent_background: true.
-
-flowering-branch.png
-Use case: stylized-concept. Asset type: layered botanical animation asset for a luxury ivory wedding invitation. Generate ONE complete slender upright flowering branch, entire continuous curved tan-gold woody stem from its natural tapered lower end to fine upper tip, branching fine twigs and tiny ivory blossoms and buds, NO LEAVES (leaves will be animated separately). Narrow tall portrait composition. Stem gently meanders near central axis and twigs spread left and right, airy, restrained, realistic warm ivory flowers with champagne centers. Soft photographic botanical realism, muted elegant ivory/champagne palette. Entire branch including all twig tips and flowers completely inside image, generous 12% transparent padding on ALL four sides. Genuinely transparent background. NO frame, NO border, NO vase, NO ground, NO text, no cropped stems or flowers. One branch only.
-
-olive-leaf.png
-Use case: stylized-concept. Asset type: individual animated leaf sprite for a luxury ivory wedding invitation. ONE single realistic muted sage olive green leaf, elongated pointed oval, fine pale central vein, subtle warm gold sunlight, delicate botanical photographic texture. Leaf upright, pointed tip at top, very short thin tan petiole at bottom center, whole leaf and petiole fully visible. Center leaf filling 75% of square canvas with transparent padding on every side. Genuinely transparent background. No branches, no other leaves, no shadow rectangle, no text, no border.
